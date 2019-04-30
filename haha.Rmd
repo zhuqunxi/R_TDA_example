@@ -1,0 +1,127 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+```{r}
+##########################################################################
+# loading R package TDA
+##########################################################################
+library(package = "TDA")
+
+
+
+##########################################################################
+# uniform sample on the circle
+##########################################################################
+circleSample <- circleUnif(n = 20, r = 1)
+plot(circleSample, xlab = "", ylab = "", pch = 20)
+
+
+
+##########################################################################
+# uniform sample on the circle, and grid of points
+##########################################################################
+X <- circleUnif(n = 400, r = 1)
+
+lim <- c(-1.7, 1.7)
+by <- 0.05
+margin <- seq(from = lim[1], to = lim[2], by = by)
+Grid <- expand.grid(margin, margin)
+
+
+
+##########################################################################
+# kernel density estimator
+##########################################################################
+h <- 0.3
+KDE <- kde(X = X, Grid = Grid, h = h)
+
+par(mfrow = c(1,2))
+plot(X, xlab = "", ylab = "", main = "Sample X", pch = 20)
+persp(x = margin, y = margin,
+      z = matrix(KDE, nrow = length(margin), ncol = length(margin)),
+      xlab = "", ylab = "", zlab = "", theta = -20, phi = 35, scale = FALSE,
+      expand = 3, col = "red", border = NA, ltheta = 50, shade = 0.5,
+      main = "KDE")
+
+
+
+##########################################################################
+# persistent homology of a function over a grid
+##########################################################################
+DiagGrid <- gridDiag(X = X, FUN = kde, lim = c(lim, lim), by = by,
+                     sublevel = FALSE, library = "Dionysus", location = TRUE,
+                     printProgress = FALSE, h = h)
+
+
+
+##########################################################################
+# plotting persistence diagram
+##########################################################################
+par(mfrow = c(1,3))
+plot(X, xlab = "", ylab = "", main = "Sample X", pch = 20)
+one <- which(DiagGrid[["diagram"]][, 1] == 1)
+for (i in seq(along = one)) {
+  for (j in seq_len(dim(DiagGrid[["cycleLocation"]][[one[i]]])[1])) {
+    lines(DiagGrid[["cycleLocation"]][[one[i]]][j, , ], pch = 19, cex = 1,
+          col = i + 1)
+  }
+}
+persp(x = margin, y = margin,
+      z = matrix(KDE, nrow = length(margin), ncol = length(margin)),
+      xlab = "", ylab = "", zlab = "", theta = -20, phi = 35, scale = FALSE,
+      expand = 3, col = "red", border = NA, ltheta = 50, shade = 0.9,
+      main = "KDE")
+plot(x = DiagGrid[["diagram"]], main = "KDE Diagram")
+
+
+
+##########################################################################
+# rips persistence diagram
+##########################################################################
+DiagRips <- ripsDiag(X = X, maxdimension = 1, maxscale = 0.5,
+                     library = c("GUDHI", "Dionysus"), location = TRUE)
+
+
+
+##########################################################################
+# plotting persistence diagram
+##########################################################################
+par(mfrow = c(1,2))
+plot(X, xlab = "", ylab = "", main = "Sample X", pch = 20)
+plot(x = DiagRips[["diagram"]], main = "Rips Diagram")
+
+
+
+##########################################################################
+# bootstrap confidence band for kde function
+##########################################################################
+bandKDE <- bootstrapBand(X = X, FUN = kde, Grid = Grid, B = 100,
+                         parallel = FALSE, alpha = 0.1, h = h)
+print(bandKDE[["width"]])
+
+
+
+##########################################################################
+# bootstrap confidence band for persistent homology over a grid
+##########################################################################
+par(mfrow = c(1,2))
+plot(X, xlab = "", ylab = "", main = "Sample X", pch = 20)
+plot(x = DiagGrid[["diagram"]], band = 2 * bandKDE[["width"]],
+     main = "KDE Diagram")
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
